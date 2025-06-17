@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmergency } from '@/contexts/EmergencyContext';
-import { MessageCircle, Send } from 'lucide-react'; // Remove Trash2 import here
+import { MessageCircle, Send, Trash2 } from 'lucide-react';
 
 const FamilyChat: React.FC = () => {
-  const { chatMessages, userName, sendMessage } = useEmergency(); // Remove resetAllData from here
+  const { chatMessages, userName, sendMessage, resetAllData } = useEmergency();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
@@ -43,12 +43,21 @@ const FamilyChat: React.FC = () => {
   };
 
   return (
-    <Card className="flex flex-col h-96 shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
+    // Card Container: הרחבת הגובה מ-h-96 ל-h-[700px]
+    <Card className="flex flex-col h-[700px] shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
       <CardHeader className="flex-shrink-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
           <MessageCircle className="h-5 w-5 text-purple-600" />
           צ'אט משפחתי 💬
-          {/* REMOVED: Reset Button from here */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={resetAllData}
+            className="mr-auto text-red-500 hover:text-red-700"
+            title="איפוס נתוני צ'אט וסטטוס"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </CardTitle>
       </CardHeader>
 
