@@ -37,7 +37,7 @@ const EmergencyDashboard: React.FC = () => {
         </div>
 
         <footer className="text-center mt-8 text-slate-500 text-sm">
-          <p>💝 מערכת דיווח משפחתי עם אהבה</p>
+          <p>product by YisaStock</p>
         </footer>
       </div>
     </div>
