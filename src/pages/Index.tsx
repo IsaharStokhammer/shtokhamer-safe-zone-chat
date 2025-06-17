@@ -45,7 +45,7 @@ const EmergencyDashboard: React.FC = () => {
           {/* טקסט הכותרת במרכז */}
           <div className="text-right flex-grow">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">
-              🏠 משפחת שטוקהמר
+              🏠 הממ"ד המשותף של משפחת שטוקהמר
             </h1>
             <p className="text-slate-600 text-lg">
               ברוכים הבאים, {userName} 💙
