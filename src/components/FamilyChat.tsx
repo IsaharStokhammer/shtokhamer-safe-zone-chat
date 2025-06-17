@@ -10,11 +10,23 @@ const FamilyChat: React.FC = () => {
   const { chatMessages, userName, sendMessage } = useEmergency();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null); // Ref עבור ה-div הניתן לגלילה
 
+  // פונקציה לגלילה לתחתית, עם תנאי
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      // גלול לתחתית רק אם המשתמש כבר קרוב לתחתית, או אם זו ההודעה הראשונה אי פעם
+      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+      const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50; // באפר של 50 פיקסלים מהתחתית
+
+      // אם זו הודעה ראשונה או שהמשתמש כבר בתחתית, גלול למטה
+      if (isScrolledToBottom || chatMessages.length === 0) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   };
 
+  // אפקט לגלילה לתחתית בכל פעם ש-chatMessages משתנה
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages]);
@@ -43,7 +55,7 @@ const FamilyChat: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col p-4 pt-0">
-        <div className="flex-1 overflow-y-auto mb-4 space-y-3 min-h-0">
+        <div ref={chatContainerRef} className="flex-1 overflow-y-auto mb-4 space-y-3 min-h-0">
           {chatMessages.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <div className="text-2xl mb-2">💬</div>
@@ -64,7 +76,8 @@ const FamilyChat: React.FC = () => {
                     {msg.sender}
                   </div>
                 </div>
-                <div className="text-base leading-relaxed mb-2 font-medium">
+                {/* התיקון לגלישת טקסט: break-words */}
+                <div className="text-base leading-relaxed mb-2 font-medium break-words">
                   {msg.message}
                 </div>
                 <div className="text-xs text-slate-500 opacity-75">

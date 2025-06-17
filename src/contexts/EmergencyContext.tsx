@@ -1,8 +1,7 @@
 // src/contexts/EmergencyContext.tsx
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 
-const WEBSOCKET_URL = 'ws://localhost:3000'; // Make sure this matches your server.js port
-const POLLING_INTERVAL_MS = 3000; // Refresh data every 3 seconds - FOR TESTING/TEMPORARY FIX ONLY
+const WEBSOCKET_URL = 'ws://localhost:3000'; // ודא שזה תואם לפורט של server.js שלך
 
 interface FamilyMember {
   name: string;
@@ -18,10 +17,10 @@ interface ChatMessage {
 }
 
 interface ServerMessage {
-  type: 'INITIAL_DATA' | 'UPDATE_FAMILY_MEMBERS' | 'UPDATE_CHAT_MESSAGES';
+  type: 'INITIAL_DATA' | 'UPDATE_FAMILY_MEMBERS' | 'UPDATE_CHAT_MESSAGES' | 'REQUEST_INITIAL_DATA'; // Updated to include REQUEST_INITIAL_DATA type
   familyMembers?: FamilyMember[];
   chatMessages?: ChatMessage[];
-  payload?: any;
+  payload?: any; // payload will contain the actual array for updates
 }
 
 interface EmergencyContextType {
@@ -57,7 +56,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Function to establish WebSocket connection
   const connectWebSocket = useCallback(() => {
     if (ws.current) {
-      ws.current.close(); // Close existing connection if any
+      ws.current.close(); // סגור חיבור קיים אם יש
     }
 
     ws.current = new WebSocket(WEBSOCKET_URL);
@@ -68,43 +67,61 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
-      // Request initial data upon successful connection
+      // בקש נתונים ראשוניים בחיבור מוצלח
       ws.current.send(JSON.stringify({ type: 'REQUEST_INITIAL_DATA' }));
     };
 
     ws.current.onmessage = (event) => {
       const data: ServerMessage = JSON.parse(event.data.toString());
-      console.log('Received from server:', data); // Log to see what's coming in
-      if (data.type === 'INITIAL_DATA' || data.type === 'UPDATE_FAMILY_MEMBERS') {
-        setFamilyMembers(data.familyMembers.map(member => ({
-          ...member,
-          timestamp: new Date(member.timestamp)
-        })));
-      }
-      if (data.type === 'INITIAL_DATA' || data.type === 'UPDATE_CHAT_MESSAGES') {
-        setChatMessages(data.chatMessages.map(msg => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        })));
+      console.log('Received from server:', data);
+      
+      if (data.type === 'INITIAL_DATA') {
+          // For INITIAL_DATA, the arrays are directly on the data object
+          if (data.familyMembers) {
+              setFamilyMembers(data.familyMembers.map(member => ({
+                  ...member,
+                  timestamp: new Date(member.timestamp)
+              })));
+          }
+          if (data.chatMessages) {
+              setChatMessages(data.chatMessages.map(msg => ({
+                  ...msg,
+                  timestamp: new Date(msg.timestamp)
+              })));
+          }
+      } else if (data.type === 'UPDATE_FAMILY_MEMBERS' && data.payload) {
+          // For UPDATE types, data is in payload
+          setFamilyMembers(data.payload.map((member: FamilyMember) => ({ // Cast payload elements to FamilyMember
+              ...member,
+              timestamp: new Date(member.timestamp)
+          })));
+      } else if (data.type === 'UPDATE_CHAT_MESSAGES' && data.payload) {
+          // For UPDATE types, data is in payload
+          setChatMessages(data.payload.map((msg: ChatMessage) => ({ // Cast payload elements to ChatMessage
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+          })));
       }
     };
 
     ws.current.onclose = () => {
       console.log('WebSocket disconnected. Attempting to reconnect...');
+      // הפעל טיימר חיבור מחדש רק אם הוא לא פועל כבר
       if (!reconnectTimeoutRef.current) {
-        reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
+        reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000); // נסה להתחבר מחדש לאחר 3 שניות
       }
     };
 
     ws.current.onerror = (error) => {
       console.error('WebSocket error:', error);
+      // סגור כדי להפעיל את onclose ולוגיקת החיבור מחדש
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.close();
       }
     };
   }, []);
 
-  // Initial connection and cleanup
+  // חיבור ראשוני וניקוי
   useEffect(() => {
     connectWebSocket();
     return () => {
@@ -117,19 +134,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [connectWebSocket]);
 
-  // Polling mechanism to request data periodically (as a temporary workaround)
-  useEffect(() => {
-    const pollingInterval = setInterval(() => {
-      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        console.log('Polling server for updates...');
-        ws.current.send(JSON.stringify({ type: 'REQUEST_INITIAL_DATA' }));
-      }
-    }, POLLING_INTERVAL_MS);
-
-    return () => clearInterval(pollingInterval);
-  }, []); // Empty dependency array means this runs once on mount and cleans up on unmount
-
-  // Save username to localStorage
+  // שמירת שם משתמש ב-localStorage
   useEffect(() => {
     if (userName) {
       localStorage.setItem('stockhammer-username', userName);
@@ -140,13 +145,13 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const newMember: FamilyMember = {
       name,
       timestamp: new Date(),
-      id: Date.now().toString()
+      id: Date.now().toString() // ID ייחודי
     };
 
-    // Optimistic update
+    // עדכון אופטימיסטי - יוצר מערך חדש
     setFamilyMembers(prev => {
         if (!prev.some(member => member.id === newMember.id)) {
-            return [...prev, newMember];
+            return [...prev, newMember]; // יוצר מערך חדש עם הפריט החדש
         }
         return prev;
     });
@@ -163,11 +168,11 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sender,
       message,
       timestamp: new Date(),
-      id: Date.now().toString()
+      id: Date.now().toString() // ID ייחודי
     };
 
-    // Optimistic update
-    setChatMessages(prev => [...prev, newMessage]);
+    // עדכון אופטימיסטי - יוצר מערך חדש
+    setChatMessages(prev => [...prev, newMessage]); // יוצר מערך חדש עם הפריט החדש
 
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ type: 'SEND_MESSAGE', payload: newMessage }));
