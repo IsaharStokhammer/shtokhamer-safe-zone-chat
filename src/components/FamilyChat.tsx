@@ -12,17 +12,12 @@ const FamilyChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // פונקציה לגלילה לתחתית - תמיד גלול להודעה האחרונה
   const scrollToBottom = () => {
-    if (chatScrollContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = chatScrollContainerRef.current;
-      const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50;
-
-      if (isScrolledToBottom || chatMessages.length === 0) {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // אפקט לגלילה לתחתית בכל פעם ש-chatMessages משתנה
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages]);
@@ -43,7 +38,6 @@ const FamilyChat: React.FC = () => {
   };
 
   return (
-    // Card Container: הרחבת הגובה מ-h-96 ל-h-[700px]
     <Card className="flex flex-col h-[700px] shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
       <CardHeader className="flex-shrink-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
