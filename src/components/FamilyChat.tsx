@@ -59,11 +59,15 @@ const FamilyChat: React.FC = () => {
                     : 'bg-gray-100 text-gray-900 mr-auto text-right'
                 }`}
               >
-                <div className="font-semibold text-sm mb-1 text-slate-600">
-                  {msg.sender}
+                <div className="bg-white/70 px-2 py-1 rounded-md mb-2 border-b-2 border-slate-300">
+                  <div className="font-bold text-sm text-slate-700">
+                    {msg.sender}
+                  </div>
                 </div>
-                <div className="mb-1">{msg.message}</div>
-                <div className="text-xs text-slate-500">
+                <div className="text-base leading-relaxed mb-2 font-medium">
+                  {msg.message}
+                </div>
+                <div className="text-xs text-slate-500 opacity-75">
                   {formatTime(msg.timestamp)}
                 </div>
               </div>
