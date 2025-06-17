@@ -76,19 +76,18 @@ const FamilyChat: React.FC = () => {
               <div
                 key={msg.id}
                 // בועת ההודעה: מקטין padding, הגבלת רוחב מקסימלי, וודא שבירת מילים
-                className={`p-2 rounded-lg max-w-[85%] overflow-hidden ${ // p-2 להקטנת גובה, max-w-[85%]
+                className={`p-2 rounded-lg max-w-[85%] overflow-hidden ${
                   msg.sender === userName
-                    ? 'bg-blue-100 text-blue-900 ml-auto' // ml-auto ליישור לימין
-                    : 'bg-gray-100 text-gray-900 mr-auto' // mr-auto ליישור לשמאל
-                } flex flex-col`} // בועה היא מיכל פלקס משלה
-                style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }} // שבירת מילים אגרסיבית
+                    ? 'bg-blue-100 text-blue-900 ml-auto'
+                    : 'bg-gray-100 text-gray-900 mr-auto'
+                } flex flex-col`}
+                style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
               >
                 <div className="bg-white/70 px-2 py-1 rounded-md mb-2 border-b-2 border-slate-300">
                   <div className="font-bold text-sm text-slate-700">
                     {msg.sender}
                   </div>
                 </div>
-                {/* תוכן ההודעה */}
                 <div className="text-base leading-relaxed mb-2 font-medium">
                   {msg.message}
                 </div>
@@ -101,7 +100,6 @@ const FamilyChat: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
         
-        {/* טופס שליחה: ממוקם בתחתית, תמיד גלוי */}
         <form onSubmit={handleSendMessage} className="flex-shrink-0 flex gap-2 pt-4">
           <Input
             value={newMessage}

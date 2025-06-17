@@ -1,7 +1,8 @@
 // src/contexts/EmergencyContext.tsx
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 
-const WEBSOCKET_URL = 'ws://localhost:3000'; // ודא שזה תואם לפורט של server.js שלך
+// כתובת ה-URL של שרת ה-WebSocket הפרוס ב-Render
+const WEBSOCKET_URL = 'wss://shtokhamer-safe-zone-chat.onrender.com'; // **עודכן לכתובת ה-URL שסיפקת**
 
 interface FamilyMember {
   name: string;
@@ -31,7 +32,7 @@ interface EmergencyContextType {
   reportSafety: (name: string) => void;
   sendMessage: (sender: string, message: string) => void;
   isUserReported: boolean;
-  resetAllData: () => void; // פונקציה חדשה לאיפוס נתונים
+  resetAllData: () => void;
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(undefined);
@@ -57,7 +58,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Function to establish WebSocket connection
   const connectWebSocket = useCallback(() => {
     if (ws.current) {
-      ws.current.close(); // סגור חיבור קיים אם יש
+      ws.current.close();
     }
 
     ws.current = new WebSocket(WEBSOCKET_URL);
@@ -68,7 +69,6 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
-      // בקש נתונים ראשוניים בחיבור מוצלח
       ws.current.send(JSON.stringify({ type: 'REQUEST_INITIAL_DATA' }));
     };
 
@@ -77,7 +77,6 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.log('Received from server:', data);
       
       if (data.type === 'INITIAL_DATA') {
-          // For INITIAL_DATA, the arrays are directly on the data object
           if (data.familyMembers) {
               setFamilyMembers(data.familyMembers.map(member => ({
                   ...member,
@@ -91,14 +90,12 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               })));
           }
       } else if (data.type === 'UPDATE_FAMILY_MEMBERS' && data.payload) {
-          // For UPDATE types, data is in payload
-          setFamilyMembers(data.payload.map((member: FamilyMember) => ({ // Cast payload elements to FamilyMember
+          setFamilyMembers(data.payload.map((member: FamilyMember) => ({
               ...member,
               timestamp: new Date(member.timestamp)
           })));
       } else if (data.type === 'UPDATE_CHAT_MESSAGES' && data.payload) {
-          // For UPDATE types, data is in payload
-          setChatMessages(data.payload.map((msg: ChatMessage) => ({ // Cast payload elements to ChatMessage
+          setChatMessages(data.payload.map((msg: ChatMessage) => ({
               ...msg,
               timestamp: new Date(msg.timestamp)
           })));
@@ -107,22 +104,19 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     ws.current.onclose = () => {
       console.log('WebSocket disconnected. Attempting to reconnect...');
-      // הפעל טיימר חיבור מחדש רק אם הוא לא פועל כבר
       if (!reconnectTimeoutRef.current) {
-        reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000); // נסה להתחבר מחדש לאחר 3 שניות
+        reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
       }
     };
 
     ws.current.onerror = (error => {
       console.error('WebSocket error:', error);
-      // סגור כדי להפעיל את onclose ולוגיקת החיבור מחדש
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.close();
       }
     });
   }, []);
 
-  // חיבור ראשוני וניקוי
   useEffect(() => {
     connectWebSocket();
     return () => {
@@ -135,7 +129,6 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [connectWebSocket]);
 
-  // שמירת שם משתמש ב-localStorage
   useEffect(() => {
     if (userName) {
       localStorage.setItem('stockhammer-username', userName);
@@ -146,13 +139,12 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const newMember: FamilyMember = {
       name,
       timestamp: new Date(),
-      id: Date.now().toString() // ID ייחודי
+      id: Date.now().toString()
     };
 
-    // עדכון אופטימיסטי - יוצר מערך חדש
     setFamilyMembers(prev => {
         if (!prev.some(member => member.id === newMember.id)) {
-            return [...prev, newMember]; // יוצר מערך חדש עם הפריט החדש
+            return [...prev, newMember];
         }
         return prev;
     });
@@ -169,11 +161,10 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sender,
       message,
       timestamp: new Date(),
-      id: Date.now().toString() // ID ייחודי
+      id: Date.now().toString()
     };
 
-    // עדכון אופטימיסטי - יוצר מערך חדש
-    setChatMessages(prev => [...prev, newMessage]); // יוצר מערך חדש עם הפריט החדש
+    setChatMessages(prev => [...prev, newMessage]);
 
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ type: 'SEND_MESSAGE', payload: newMessage }));
@@ -202,7 +193,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       reportSafety,
       sendMessage,
       isUserReported,
-      resetAllData // הוסף resetAllData לערך הקונטקסט
+      resetAllData
     }}>
       {children}
     </EmergencyContext.Provider>
