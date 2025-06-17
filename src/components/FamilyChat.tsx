@@ -1,4 +1,4 @@
-
+// src/components/FamilyChat.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,8 +28,8 @@ const FamilyChat: React.FC = () => {
   };
 
   const formatTime = (timestamp: Date) => {
-    return timestamp.toLocaleTimeString('he-IL', { 
-      hour: '2-digit', 
+    return timestamp.toLocaleTimeString('he-IL', {
+      hour: '2-digit',
       minute: '2-digit'
     });
   };

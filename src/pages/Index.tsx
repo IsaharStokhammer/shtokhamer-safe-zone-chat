@@ -37,7 +37,7 @@ const EmergencyDashboard: React.FC = () => {
         </div>
 
         <footer className="text-center mt-8 text-slate-500 text-sm">
-          <p>product by YisaStock</p>
+          <p>product by YissaStock</p>
         </footer>
       </div>
     </div>
