@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmergency } from '@/contexts/EmergencyContext';
-import { MessageCircle, Send } from 'lucide-react';
+import { MessageCircle, Send, Trash2 } from 'lucide-react'; // Import Trash2 icon
 
 const FamilyChat: React.FC = () => {
-  const { chatMessages, userName, sendMessage } = useEmergency();
+  const { chatMessages, userName, sendMessage, resetAllData } = useEmergency(); // Destructure resetAllData
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null); // Ref עבור ה-div הניתן לגלילה
@@ -44,14 +44,26 @@ const FamilyChat: React.FC = () => {
   };
 
   return (
-    <Card className="flex flex-col h-[600px] shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
+    // Card Container: הגבלת רוחב מקסימלי, התמרכזות, וגובה קבוע (h-96 הוחזר)
+    <Card className="flex flex-col h-96 shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
       <CardHeader className="flex-shrink-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
           <MessageCircle className="h-5 w-5 text-purple-600" />
           צ'אט משפחתי 💬
+          {/* כפתור איפוס: ממוקם ליד הכותרת */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={resetAllData}
+            className="mr-auto text-red-500 hover:text-red-700" // mr-auto דוחף אותו לקצה השני
+            title="איפוס נתוני צ'אט וסטטוס"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </CardTitle>
       </CardHeader>
 
+      {/* אזור תוכן הצ'אט: Flex item שיתפוס את השטח הזמין ויגלול */}
       <CardContent className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
         <div ref={chatScrollContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thumb-rounded scrollbar-track-rounded scrollbar-thumb-gray-400 scrollbar-track-gray-100">
           {chatMessages.length === 0 ? (
@@ -63,19 +75,20 @@ const FamilyChat: React.FC = () => {
             chatMessages.map((msg) => (
               <div
                 key={msg.id}
-                // שינוי ה-padding מ-p-3 ל-p-2
-                className={`p-2 rounded-lg max-w-[85%] overflow-hidden ${
+                // בועת ההודעה: מקטין padding, הגבלת רוחב מקסימלי, וודא שבירת מילים
+                className={`p-2 rounded-lg max-w-[85%] overflow-hidden ${ // p-2 להקטנת גובה, max-w-[85%]
                   msg.sender === userName
-                    ? 'bg-blue-100 text-blue-900 ml-auto'
-                    : 'bg-gray-100 text-gray-900 mr-auto'
-                } flex flex-col`}
-                style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                    ? 'bg-blue-100 text-blue-900 ml-auto' // ml-auto ליישור לימין
+                    : 'bg-gray-100 text-gray-900 mr-auto' // mr-auto ליישור לשמאל
+                } flex flex-col`} // בועה היא מיכל פלקס משלה
+                style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }} // שבירת מילים אגרסיבית
               >
                 <div className="bg-white/70 px-2 py-1 rounded-md mb-2 border-b-2 border-slate-300">
                   <div className="font-bold text-sm text-slate-700">
                     {msg.sender}
                   </div>
                 </div>
+                {/* תוכן ההודעה */}
                 <div className="text-base leading-relaxed mb-2 font-medium">
                   {msg.message}
                 </div>
@@ -88,6 +101,7 @@ const FamilyChat: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
         
+        {/* טופס שליחה: ממוקם בתחתית, תמיד גלוי */}
         <form onSubmit={handleSendMessage} className="flex-shrink-0 flex gap-2 pt-4">
           <Input
             value={newMessage}

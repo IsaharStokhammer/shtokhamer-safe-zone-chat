@@ -17,10 +17,10 @@ interface ChatMessage {
 }
 
 interface ServerMessage {
-  type: 'INITIAL_DATA' | 'UPDATE_FAMILY_MEMBERS' | 'UPDATE_CHAT_MESSAGES' | 'REQUEST_INITIAL_DATA'; // Updated to include REQUEST_INITIAL_DATA type
+  type: 'INITIAL_DATA' | 'UPDATE_FAMILY_MEMBERS' | 'UPDATE_CHAT_MESSAGES' | 'REQUEST_INITIAL_DATA';
   familyMembers?: FamilyMember[];
   chatMessages?: ChatMessage[];
-  payload?: any; // payload will contain the actual array for updates
+  payload?: any;
 }
 
 interface EmergencyContextType {
@@ -31,6 +31,7 @@ interface EmergencyContextType {
   reportSafety: (name: string) => void;
   sendMessage: (sender: string, message: string) => void;
   isUserReported: boolean;
+  resetAllData: () => void; // פונקציה חדשה לאיפוס נתונים
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(undefined);
@@ -112,13 +113,13 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     };
 
-    ws.current.onerror = (error) => {
+    ws.current.onerror = (error => {
       console.error('WebSocket error:', error);
       // סגור כדי להפעיל את onclose ולוגיקת החיבור מחדש
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
         ws.current.close();
       }
-    };
+    });
   }, []);
 
   // חיבור ראשוני וניקוי
@@ -181,6 +182,15 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, []);
 
+  const resetAllData = useCallback(() => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      console.log('Sending RESET_DATA request to server...');
+      ws.current.send(JSON.stringify({ type: 'RESET_DATA' }));
+    } else {
+      console.warn("WebSocket not connected. Cannot send reset request.");
+    }
+  }, []);
+
   const isUserReported = familyMembers.some(member => member.name === userName);
 
   return (
@@ -191,7 +201,8 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setUserName,
       reportSafety,
       sendMessage,
-      isUserReported
+      isUserReported,
+      resetAllData // הוסף resetAllData לערך הקונטקסט
     }}>
       {children}
     </EmergencyContext.Provider>

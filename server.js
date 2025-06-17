@@ -4,16 +4,20 @@ import http from 'http';
 
 const PORT = process.env.PORT || 3000;
 
+// Create a simple HTTP server (needed for WebSocket server)
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('WebSocket server is running');
 });
 
+// Create WebSocket server
 const wss = new WebSocketServer({ server });
 
+// In-memory data store (for simplicity)
 let familyMembers = [];
 let chatMessages = [];
 
+// Function to broadcast messages to all connected clients
 function broadcast(data) {
   wss.clients.forEach(client => {
     if (client.readyState === client.OPEN) {
@@ -45,8 +49,15 @@ wss.on('connection', ws => {
         chatMessages.push({ sender, message: chatMsg, timestamp: new Date(msgTimestamp), id: msgId });
         broadcast({ type: 'UPDATE_CHAT_MESSAGES', payload: chatMessages });
         break;
-      case 'REQUEST_INITIAL_DATA': // NEW: Handle polling request
+      case 'REQUEST_INITIAL_DATA':
         ws.send(JSON.stringify({ type: 'INITIAL_DATA', familyMembers, chatMessages }));
+        break;
+      case 'RESET_DATA': // Handle reset request from client
+        console.log('Received RESET_DATA request. Resetting in-memory data.');
+        familyMembers = []; // Reset family members
+        chatMessages = [];  // Reset chat messages
+        // Broadcast the new, empty state to all connected clients
+        broadcast({ type: 'INITIAL_DATA', familyMembers, chatMessages });
         break;
     }
   });
