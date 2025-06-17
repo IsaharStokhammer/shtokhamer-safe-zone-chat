@@ -15,7 +15,7 @@ const wss = new WebSocketServer({ server });
 
 // In-memory data store (for simplicity)
 let familyMembers = [];
-let chatMessages = [];
+let chatMessages = []; // נשמור את הצ'אט, לא נאפס אותו כאן
 
 // Function to broadcast messages to all connected clients
 function broadcast(data) {
@@ -53,11 +53,11 @@ wss.on('connection', ws => {
         ws.send(JSON.stringify({ type: 'INITIAL_DATA', familyMembers, chatMessages }));
         break;
       case 'RESET_DATA': // Handle reset request from client
-        console.log('Received RESET_DATA request. Resetting in-memory data.');
-        familyMembers = []; // Reset family members
-        chatMessages = [];  // Reset chat messages
-        // Broadcast the new, empty state to all connected clients
-        broadcast({ type: 'INITIAL_DATA', familyMembers, chatMessages });
+        console.log('Received RESET_DATA request. Resetting only familyMembers.');
+        familyMembers = []; // רק familyMembers יתאפס
+        // chatMessages נשאר כפי שהוא
+        // Broadcast the updated state to all connected clients
+        broadcast({ type: 'INITIAL_DATA', familyMembers, chatMessages }); // נשלח את כל הנתונים, כאשר רק familyMembers מאופס
         break;
     }
   });
