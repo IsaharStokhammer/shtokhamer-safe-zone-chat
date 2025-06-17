@@ -4,16 +4,18 @@ import http from 'http';
 
 const PORT = process.env.PORT || 3000;
 
+// Create a simple HTTP server (needed for WebSocket server)
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('WebSocket server is running');
 });
 
+// Create WebSocket server
 const wss = new WebSocketServer({ server });
 
+// In-memory data store (for simplicity)
 let familyMembers = [];
-let chatMessages = [];
-// NEW: Store currently typing users
+let chatMessages = []; // Updated to store reactions
 const typingUsers = new Map(); // Map to store { userName: timestamp_of_last_typing_event }
 
 function broadcast(data) {
@@ -50,9 +52,9 @@ wss.on('connection', ws => {
         break;
       case 'SEND_MESSAGE':
         const { sender, message: chatMsg, timestamp: msgTimestamp, id: msgId } = data.payload;
-        chatMessages.push({ sender, message: chatMsg, timestamp: new Date(msgTimestamp), id: msgId });
+        // NEW: Initialize message with empty reactions array
+        chatMessages.push({ sender, message: chatMsg, timestamp: new Date(msgTimestamp), id: msgId, reactions: [] }); 
         broadcast({ type: 'UPDATE_CHAT_MESSAGES', payload: chatMessages });
-        // After sending message, assume user stopped typing
         if (typingUsers.has(sender)) {
           typingUsers.delete(sender);
           broadcastTypingStatus();
@@ -77,6 +79,35 @@ wss.on('connection', ws => {
         if (typingUsers.has(data.payload.userName)) {
           typingUsers.delete(data.payload.userName);
           broadcastTypingStatus();
+        }
+        break;
+      case 'ADD_REACTION': // NEW: Handle adding reactions
+        const { messageId, emoji, reactorName } = data.payload;
+        const messageToReact = chatMessages.find(msg => msg.id === messageId);
+        if (messageToReact) {
+          // Check if reaction from this user already exists for this emoji
+          const existingReactionIndex = messageToReact.reactions.findIndex(
+            reaction => reaction.emoji === emoji && reaction.users.includes(reactorName)
+          );
+
+          if (existingReactionIndex > -1) {
+            // User already reacted with this emoji - remove reaction
+            messageToReact.reactions[existingReactionIndex].users = messageToReact.reactions[existingReactionIndex].users.filter(
+                user => user !== reactorName
+            );
+            if (messageToReact.reactions[existingReactionIndex].users.length === 0) {
+                messageToReact.reactions.splice(existingReactionIndex, 1); // Remove emoji if no users left
+            }
+          } else {
+            // Add new reaction or add user to existing emoji reaction
+            const emojiGroup = messageToReact.reactions.find(reaction => reaction.emoji === emoji);
+            if (emojiGroup) {
+                emojiGroup.users.push(reactorName);
+            } else {
+                messageToReact.reactions.push({ emoji, users: [reactorName] });
+            }
+          }
+          broadcast({ type: 'UPDATE_CHAT_MESSAGES', payload: chatMessages }); // Broadcast updated messages
         }
         break;
     }

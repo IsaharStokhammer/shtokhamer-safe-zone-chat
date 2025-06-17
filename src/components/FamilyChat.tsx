@@ -4,14 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmergency } from '@/contexts/EmergencyContext';
-import { MessageCircle, Send, Trash2 } from 'lucide-react';
+import { MessageCircle, Send, Trash2, Smile } from 'lucide-react'; // Import Smile for reaction button
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Import Popover components
 
 const FamilyChat: React.FC = () => {
-  const { chatMessages, userName, sendMessage, resetAllData, typingUsers, startTyping, stopTyping } = useEmergency(); // Destructure typingUsers, startTyping, stopTyping
+  const { chatMessages, userName, sendMessage, resetAllData, typingUsers, startTyping, stopTyping, addReaction } = useEmergency();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Ref for typing timeout
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Common emojis for quick reaction
+  const commonEmojis = ['👍', '❤️', '😂', '🙏', '😢', '🔥'];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,41 +30,47 @@ const FamilyChat: React.FC = () => {
     if (newMessage.trim()) {
       sendMessage(userName, newMessage.trim());
       setNewMessage('');
-      if (typingTimeoutRef.current) { // Clear any pending stop typing timeout
+      if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
       }
-      stopTyping(); // Explicitly stop typing after sending
+      stopTyping();
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
 
-    // Start typing
-    if (e.target.value.length > 0 && !typingTimeoutRef.current) {
+    if (e.target.value.length > 0) {
       startTyping();
-    }
-
-    // Reset stop typing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    typingTimeoutRef.current = setTimeout(() => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        stopTyping();
+        typingTimeoutRef.current = null;
+      }, 1000);
+    } else {
       stopTyping();
-      typingTimeoutRef.current = null;
-    }, 1000); // Stop typing after 1 second of inactivity
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+    }
   };
 
-  // Clean up typing timeout on unmount
   useEffect(() => {
     return () => {
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
-      stopTyping(); // Ensure typing status is cleared on unmount
+      stopTyping();
     };
   }, [stopTyping]);
+
+  const handleAddReaction = (messageId: string, emoji: string) => {
+    addReaction(messageId, emoji);
+  };
 
   const formatTime = (timestamp: Date) => {
     return timestamp.toLocaleTimeString('he-IL', {
@@ -69,7 +79,6 @@ const FamilyChat: React.FC = () => {
     });
   };
 
-  // Filter out current user from typing users
   const otherTypingUsers = typingUsers.filter(user => user !== userName);
 
   return (
@@ -101,7 +110,7 @@ const FamilyChat: React.FC = () => {
             chatMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`p-2 rounded-lg max-w-[85%] overflow-hidden ${
+                className={`p-2 rounded-lg max-w-[85%] overflow-hidden relative group ${ // Added relative and group for popover positioning
                   msg.sender === userName
                     ? 'bg-blue-100 text-blue-900 ml-auto'
                     : 'bg-gray-100 text-gray-900 mr-auto'
@@ -119,13 +128,56 @@ const FamilyChat: React.FC = () => {
                 <div className="text-xs text-slate-500 opacity-75">
                   {formatTime(msg.timestamp)}
                 </div>
+
+                {/* NEW: Reactions display */}
+                {msg.reactions && msg.reactions.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2 text-xs">
+                    {msg.reactions.map((reaction) => (
+                      <span
+                        key={reaction.emoji}
+                        className="bg-white/70 px-2 py-0.5 rounded-full border border-gray-200 flex items-center cursor-pointer hover:bg-gray-200 transition-colors"
+                        title={reaction.users.join(', ')} // Show who reacted on hover
+                        onClick={() => handleAddReaction(msg.id, reaction.emoji)} // Allow toggling reaction
+                      >
+                        {reaction.emoji} {reaction.users.length}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* NEW: Reaction button (Popover) - positioned absolutely for better placement */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={`absolute top-0.5 ${msg.sender === userName ? 'left-0.5' : 'right-0.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto w-auto`} // Hide by default, show on hover
+                      title="הגב באימוג'י"
+                    >
+                      <Smile className="h-3 w-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-1 flex gap-1 bg-white/90 backdrop-blur-sm shadow-lg rounded-md border">
+                    {commonEmojis.map(emoji => (
+                      <Button
+                        key={emoji}
+                        variant="ghost"
+                        size="sm"
+                        className="p-1 h-auto w-auto text-lg hover:bg-gray-100"
+                        onClick={() => handleAddReaction(msg.id, emoji)}
+                      >
+                        {emoji}
+                      </Button>
+                    ))}
+                  </PopoverContent>
+                </Popover>
               </div>
             ))
           )}
           <div ref={messagesEndRef} />
         </div>
         
-        {/* NEW: Typing indicator */}
+        {/* Typing indicator */}
         {otherTypingUsers.length > 0 && (
           <div className="text-right text-sm text-slate-500 mt-2 mb-2 pr-2">
             {otherTypingUsers.join(', ')} מקליד/ה...
@@ -135,7 +187,7 @@ const FamilyChat: React.FC = () => {
         <form onSubmit={handleSendMessage} className="flex-shrink-0 flex gap-2 pt-4">
           <Input
             value={newMessage}
-            onChange={handleInputChange} // Use the new handler
+            onChange={handleInputChange}
             placeholder="כתבו הודעה..."
             className="flex-1 text-right"
             dir="rtl"

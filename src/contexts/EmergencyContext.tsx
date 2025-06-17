@@ -9,11 +9,18 @@ interface FamilyMember {
   id: string;
 }
 
+// NEW: Define reaction structure
+interface Reaction {
+  emoji: string;
+  users: string[]; // Array of user names who reacted with this emoji
+}
+
 interface ChatMessage {
   sender: string;
   message: string;
   timestamp: Date;
   id: string;
+  reactions: Reaction[]; // NEW: Add reactions array to chat messages
 }
 
 interface ServerMessage {
@@ -33,9 +40,10 @@ interface EmergencyContextType {
   sendMessage: (sender: string, message: string) => void;
   isUserReported: boolean;
   resetAllData: () => void;
-  typingUsers: string[]; // NEW: State for typing users
-  startTyping: () => void; // NEW: Function to signal typing start
-  stopTyping: () => void; // NEW: Function to signal typing stop
+  typingUsers: string[]; // State for typing users
+  startTyping: () => void; // Function to signal typing start
+  stopTyping: () => void; // Function to signal typing stop
+  addReaction: (messageId: string, emoji: string) => void; // Function to add a reaction
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(undefined);
@@ -88,12 +96,14 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               })));
           }
           if (data.chatMessages) {
+              // Ensure reactions are initialized or correctly parsed
               setChatMessages(data.chatMessages.map(msg => ({
                   ...msg,
-                  timestamp: new Date(msg.timestamp)
+                  timestamp: new Date(msg.timestamp),
+                  reactions: msg.reactions || [] // Ensure reactions is an array
               })));
           }
-          if (data.typingUsers) { // NEW: Handle initial typing users
+          if (data.typingUsers) {
             setTypingUsers(data.typingUsers);
           }
       } else if (data.type === 'UPDATE_FAMILY_MEMBERS' && data.payload) {
@@ -102,9 +112,11 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               timestamp: new Date(member.timestamp)
           })));
       } else if (data.type === 'UPDATE_CHAT_MESSAGES' && data.payload) {
+          // NEW: Ensure reactions are handled when updating chat messages
           setChatMessages(data.payload.map((msg: ChatMessage) => ({
               ...msg,
-              timestamp: new Date(msg.timestamp)
+              timestamp: new Date(msg.timestamp),
+              reactions: msg.reactions || [] // Ensure reactions is an array
           })));
       } else if (data.type === 'UPDATE_TYPING_USERS' && data.payload) { // NEW: Handle typing status updates
           setTypingUsers(data.payload);
@@ -125,7 +137,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         ws.current.close();
       }
     });
-  }, [userName]); // Added userName to dependency array for reconnect
+  }, [userName]);
 
   useEffect(() => {
     connectWebSocket();
@@ -171,7 +183,8 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sender,
       message,
       timestamp: new Date(),
-      id: Date.now().toString()
+      id: Date.now().toString(),
+      reactions: [] // NEW: Initialize reactions for new messages
     };
 
     setChatMessages(prev => [...prev, newMessage]);
@@ -193,7 +206,6 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, []);
 
-  // NEW: Functions to send typing status to server
   const startTyping = useCallback(() => {
     if (userName && ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ type: 'TYPING_START', payload: { userName } }));
@@ -206,6 +218,17 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [userName]);
 
+  // NEW: Function to add a reaction
+  const addReaction = useCallback((messageId: string, emoji: string) => {
+    if (userName && ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({
+        type: 'ADD_REACTION',
+        payload: { messageId, emoji, reactorName: userName }
+      }));
+    } else {
+      console.warn("WebSocket not connected. Cannot add reaction.");
+    }
+  }, [userName]);
 
   const isUserReported = familyMembers.some(member => member.name === userName);
 
@@ -219,9 +242,10 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sendMessage,
       isUserReported,
       resetAllData,
-      typingUsers, // Expose typing users
-      startTyping, // Expose start typing function
-      stopTyping // Expose stop typing function
+      typingUsers,
+      startTyping,
+      stopTyping,
+      addReaction // Expose addReaction function
     }}>
       {children}
     </EmergencyContext.Provider>
