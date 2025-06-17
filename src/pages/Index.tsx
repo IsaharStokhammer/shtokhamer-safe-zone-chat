@@ -5,10 +5,10 @@ import SafetyButton from '@/components/SafetyButton';
 import FamilyStatus from '@/components/FamilyStatus';
 import FamilyChat from '@/components/FamilyChat';
 import { Button } from '@/components/ui/button';
-import { LogOut, UserPen, Siren } from 'lucide-react'; // ייבא אייקונים LogOut, UserPen, Siren
+import { LogOut, UserPen, Siren } from 'lucide-react';
 
 const EmergencyDashboard: React.FC = () => {
-  const { userName, setUserName, resetAllData } = useEmergency(); // הוסף resetAllData
+  const { userName, setUserName, resetAllData } = useEmergency();
 
   const handleLogout = () => {
     localStorage.removeItem('stockhammer-username');
@@ -17,7 +17,8 @@ const EmergencyDashboard: React.FC = () => {
 
   // פונקציה לטיפול בלחיצה על כפתור "אזעקה חדשה"
   const handleNewAlarm = () => {
-    if (window.confirm('האם אתה בטוח שברצונך לאתחל אזעקה חדשה ולמחוק את כל נתוני הצ'אט והסטטוס?')) {
+    // תיקון: שימוש בגרשיים כפולים עבור המחרוזת כדי למנוע שגיאת תחביר עם הגרש הפנימי
+    if (window.confirm("האם אתה בטוח שברצונך לאתחל אזעקה חדשה ולמחוק את כל נתוני הצ'אט והסטטוס?")) {
       resetAllData(); // קרא לפונקציית האיפוס מהקונטקסט
       // אופציונלי: להציג הודעת אישור למשתמש
     }
@@ -33,19 +34,19 @@ const EmergencyDashboard: React.FC = () => {
         <header className="text-center mb-8 flex justify-between items-center">
           {/* כפתור "אזעקה חדשה" בצד ימין (בהתחלה ב-RTL) */}
           <Button
-            variant="destructive" // צבע אדום
+            variant="destructive"
             size="sm"
             onClick={handleNewAlarm}
-            className="ml-4 flex items-center" // מרווח שמאלי, יישור פנימי
+            className="ml-4 flex items-center"
           >
-            <Siren className="w-4 h-4 ml-2" /> {/* אייקון סירנה מימין לטקסט */}
+            <Siren className="w-4 h-4 ml-2" />
             אזעקה חדשה!
           </Button>
 
           {/* טקסט הכותרת במרכז */}
           <div className="text-right flex-grow">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">
-              🏠 הממ"ד המשותף של משפחת שטוקהמר
+              🏠 משפחת שטוקהמר
             </h1>
             <p className="text-slate-600 text-lg">
               ברוכים הבאים, {userName} 💙
