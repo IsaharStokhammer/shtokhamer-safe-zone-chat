@@ -1,8 +1,7 @@
 // src/contexts/EmergencyContext.tsx
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 
-// כתובת ה-URL של שרת ה-WebSocket הפרוס ב-Render
-const WEBSOCKET_URL = 'wss://shtokhamer-safe-zone-chat.onrender.com'; // **עודכן לכתובת ה-URL שסיפקת**
+const WEBSOCKET_URL = 'wss://shtokhamer-safe-zone-chat.onrender.com';
 
 interface FamilyMember {
   name: string;
@@ -18,10 +17,11 @@ interface ChatMessage {
 }
 
 interface ServerMessage {
-  type: 'INITIAL_DATA' | 'UPDATE_FAMILY_MEMBERS' | 'UPDATE_CHAT_MESSAGES' | 'REQUEST_INITIAL_DATA';
+  type: 'INITIAL_DATA' | 'UPDATE_FAMILY_MEMBERS' | 'UPDATE_CHAT_MESSAGES' | 'REQUEST_INITIAL_DATA' | 'UPDATE_TYPING_USERS'; // Added UPDATE_TYPING_USERS
   familyMembers?: FamilyMember[];
   chatMessages?: ChatMessage[];
   payload?: any;
+  typingUsers?: string[]; // Added typingUsers for INITIAL_DATA and UPDATE_TYPING_USERS
 }
 
 interface EmergencyContextType {
@@ -33,6 +33,9 @@ interface EmergencyContextType {
   sendMessage: (sender: string, message: string) => void;
   isUserReported: boolean;
   resetAllData: () => void;
+  typingUsers: string[]; // NEW: State for typing users
+  startTyping: () => void; // NEW: Function to signal typing start
+  stopTyping: () => void; // NEW: Function to signal typing stop
 }
 
 const EmergencyContext = createContext<EmergencyContextType | undefined>(undefined);
@@ -51,11 +54,12 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [userName, setUserName] = useState(() =>
     localStorage.getItem('stockhammer-username') || ''
   );
+  // NEW: State to hold currently typing users
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
 
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Function to establish WebSocket connection
   const connectWebSocket = useCallback(() => {
     if (ws.current) {
       ws.current.close();
@@ -69,7 +73,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
-      ws.current.send(JSON.stringify({ type: 'REQUEST_INITIAL_DATA' }));
+      ws.current.send(JSON.stringify({ type: 'REQUEST_INITIAL_DATA', payload: { userName } })); // Send userName on connect
     };
 
     ws.current.onmessage = (event) => {
@@ -89,6 +93,9 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                   timestamp: new Date(msg.timestamp)
               })));
           }
+          if (data.typingUsers) { // NEW: Handle initial typing users
+            setTypingUsers(data.typingUsers);
+          }
       } else if (data.type === 'UPDATE_FAMILY_MEMBERS' && data.payload) {
           setFamilyMembers(data.payload.map((member: FamilyMember) => ({
               ...member,
@@ -99,6 +106,8 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               ...msg,
               timestamp: new Date(msg.timestamp)
           })));
+      } else if (data.type === 'UPDATE_TYPING_USERS' && data.payload) { // NEW: Handle typing status updates
+          setTypingUsers(data.payload);
       }
     };
 
@@ -107,6 +116,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (!reconnectTimeoutRef.current) {
         reconnectTimeoutRef.current = setTimeout(connectWebSocket, 3000);
       }
+      setTypingUsers([]); // Clear typing status if disconnected
     };
 
     ws.current.onerror = (error => {
@@ -115,7 +125,7 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         ws.current.close();
       }
     });
-  }, []);
+  }, [userName]); // Added userName to dependency array for reconnect
 
   useEffect(() => {
     connectWebSocket();
@@ -168,10 +178,11 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify({ type: 'SEND_MESSAGE', payload: newMessage }));
+      stopTyping(); // Stop typing after sending message
     } else {
       console.warn("WebSocket not connected. Message might not be synchronized.");
     }
-  }, []);
+  }, []); // Added stopTyping dependency
 
   const resetAllData = useCallback(() => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
@@ -181,6 +192,20 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       console.warn("WebSocket not connected. Cannot send reset request.");
     }
   }, []);
+
+  // NEW: Functions to send typing status to server
+  const startTyping = useCallback(() => {
+    if (userName && ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ type: 'TYPING_START', payload: { userName } }));
+    }
+  }, [userName]);
+
+  const stopTyping = useCallback(() => {
+    if (userName && ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ type: 'TYPING_STOP', payload: { userName } }));
+    }
+  }, [userName]);
+
 
   const isUserReported = familyMembers.some(member => member.name === userName);
 
@@ -193,7 +218,10 @@ export const EmergencyProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       reportSafety,
       sendMessage,
       isUserReported,
-      resetAllData
+      resetAllData,
+      typingUsers, // Expose typing users
+      startTyping, // Expose start typing function
+      stopTyping // Expose stop typing function
     }}>
       {children}
     </EmergencyContext.Provider>

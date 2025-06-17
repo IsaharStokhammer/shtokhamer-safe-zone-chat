@@ -7,17 +7,16 @@ import { useEmergency } from '@/contexts/EmergencyContext';
 import { MessageCircle, Send, Trash2 } from 'lucide-react';
 
 const FamilyChat: React.FC = () => {
-  const { chatMessages, userName, sendMessage, resetAllData } = useEmergency();
+  const { chatMessages, userName, sendMessage, resetAllData, typingUsers, startTyping, stopTyping } = useEmergency(); // Destructure typingUsers, startTyping, stopTyping
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // Ref for typing timeout
 
-  // פונקציה לגלילה לתחתית - תמיד גלול להודעה האחרונה
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // אפקט לגלילה לתחתית בכל פעם ש-chatMessages משתנה
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages]);
@@ -27,8 +26,41 @@ const FamilyChat: React.FC = () => {
     if (newMessage.trim()) {
       sendMessage(userName, newMessage.trim());
       setNewMessage('');
+      if (typingTimeoutRef.current) { // Clear any pending stop typing timeout
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      stopTyping(); // Explicitly stop typing after sending
     }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+
+    // Start typing
+    if (e.target.value.length > 0 && !typingTimeoutRef.current) {
+      startTyping();
+    }
+
+    // Reset stop typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+      typingTimeoutRef.current = null;
+    }, 1000); // Stop typing after 1 second of inactivity
+  };
+
+  // Clean up typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      stopTyping(); // Ensure typing status is cleared on unmount
+    };
+  }, [stopTyping]);
 
   const formatTime = (timestamp: Date) => {
     return timestamp.toLocaleTimeString('he-IL', {
@@ -36,6 +68,9 @@ const FamilyChat: React.FC = () => {
       minute: '2-digit'
     });
   };
+
+  // Filter out current user from typing users
+  const otherTypingUsers = typingUsers.filter(user => user !== userName);
 
   return (
     <Card className="flex flex-col h-[700px] shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
@@ -90,10 +125,17 @@ const FamilyChat: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
         
+        {/* NEW: Typing indicator */}
+        {otherTypingUsers.length > 0 && (
+          <div className="text-right text-sm text-slate-500 mt-2 mb-2 pr-2">
+            {otherTypingUsers.join(', ')} מקליד/ה...
+          </div>
+        )}
+
         <form onSubmit={handleSendMessage} className="flex-shrink-0 flex gap-2 pt-4">
           <Input
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange} // Use the new handler
             placeholder="כתבו הודעה..."
             className="flex-1 text-right"
             dir="rtl"
