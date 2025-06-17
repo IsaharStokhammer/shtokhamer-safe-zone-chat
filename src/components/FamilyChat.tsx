@@ -10,23 +10,20 @@ const FamilyChat: React.FC = () => {
   const { chatMessages, userName, sendMessage } = useEmergency();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null); // Ref עבור ה-div הניתן לגלילה
+  const chatScrollContainerRef = useRef<HTMLDivElement>(null); // Ref עבור ה-div הניתן לגלילה
 
   // פונקציה לגלילה לתחתית, עם תנאי
   const scrollToBottom = () => {
-    if (chatContainerRef.current) {
-      // גלול לתחתית רק אם המשתמש כבר קרוב לתחתית, או אם זו ההודעה הראשונה אי פעם
-      const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    if (chatScrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = chatScrollContainerRef.current;
       const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50; // באפר של 50 פיקסלים מהתחתית
 
-      // אם זו הודעה ראשונה או שהמשתמש כבר בתחתית, גלול למטה
       if (isScrolledToBottom || chatMessages.length === 0) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }
     }
   };
 
-  // אפקט לגלילה לתחתית בכל פעם ש-chatMessages משתנה
   useEffect(() => {
     scrollToBottom();
   }, [chatMessages]);
@@ -47,15 +44,16 @@ const FamilyChat: React.FC = () => {
   };
 
   return (
-    <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm h-96 flex flex-col">
-      <CardHeader className="pb-4 flex-shrink-0">
+    <Card className="flex flex-col h-[600px] shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
+      <CardHeader className="flex-shrink-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
           <MessageCircle className="h-5 w-5 text-purple-600" />
           צ'אט משפחתי 💬
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col p-4 pt-0">
-        <div ref={chatContainerRef} className="flex-1 overflow-y-auto mb-4 space-y-3 min-h-0">
+
+      <CardContent className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
+        <div ref={chatScrollContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thumb-rounded scrollbar-track-rounded scrollbar-thumb-gray-400 scrollbar-track-gray-100">
           {chatMessages.length === 0 ? (
             <div className="text-center py-8 text-slate-500">
               <div className="text-2xl mb-2">💬</div>
@@ -65,19 +63,20 @@ const FamilyChat: React.FC = () => {
             chatMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`p-3 rounded-lg max-w-xs ${
+                // שינוי ה-padding מ-p-3 ל-p-2
+                className={`p-2 rounded-lg max-w-[85%] overflow-hidden ${
                   msg.sender === userName
-                    ? 'bg-blue-100 text-blue-900 ml-auto text-right'
-                    : 'bg-gray-100 text-gray-900 mr-auto text-right'
-                }`}
+                    ? 'bg-blue-100 text-blue-900 ml-auto'
+                    : 'bg-gray-100 text-gray-900 mr-auto'
+                } flex flex-col`}
+                style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
               >
                 <div className="bg-white/70 px-2 py-1 rounded-md mb-2 border-b-2 border-slate-300">
                   <div className="font-bold text-sm text-slate-700">
                     {msg.sender}
                   </div>
                 </div>
-                {/* התיקון לגלישת טקסט: break-words */}
-                <div className="text-base leading-relaxed mb-2 font-medium break-words">
+                <div className="text-base leading-relaxed mb-2 font-medium">
                   {msg.message}
                 </div>
                 <div className="text-xs text-slate-500 opacity-75">
@@ -89,7 +88,14 @@ const FamilyChat: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
         
-        <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0">
+        <form onSubmit={handleSendMessage} className="flex-shrink-0 flex gap-2 pt-4">
+          <Input
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="כתבו הודעה..."
+            className="flex-1 text-right"
+            dir="rtl"
+          />
           <Button
             type="submit"
             size="sm"
@@ -98,13 +104,6 @@ const FamilyChat: React.FC = () => {
           >
             <Send className="h-4 w-4" />
           </Button>
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="כתבו הודעה..."
-            className="flex-1 text-right"
-            dir="rtl"
-          />
         </form>
       </CardContent>
     </Card>
