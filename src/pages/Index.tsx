@@ -4,16 +4,23 @@ import UsernameForm from '@/components/UsernameForm';
 import SafetyButton from '@/components/SafetyButton';
 import FamilyStatus from '@/components/FamilyStatus';
 import FamilyChat from '@/components/FamilyChat';
-import { Button } from '@/components/ui/button'; // ייבא את קומפוננטת Button
-import { LogOut, UserPen } from 'lucide-react'; // ייבא אייקונים
+import { Button } from '@/components/ui/button';
+import { LogOut, UserPen, Siren } from 'lucide-react'; // ייבא אייקונים LogOut, UserPen, Siren
 
 const EmergencyDashboard: React.FC = () => {
-  const { userName, setUserName } = useEmergency();
+  const { userName, setUserName, resetAllData } = useEmergency(); // הוסף resetAllData
 
-  // פונקציה להתנתקות / עריכת שם משתמש
   const handleLogout = () => {
-    localStorage.removeItem('stockhammer-username'); // נקה את שם המשתמש מ-localStorage
-    setUserName(''); // אפס את ה-userName בסטייט, מה שיפעיל את UsernameForm
+    localStorage.removeItem('stockhammer-username');
+    setUserName('');
+  };
+
+  // פונקציה לטיפול בלחיצה על כפתור "אזעקה חדשה"
+  const handleNewAlarm = () => {
+    if (window.confirm('האם אתה בטוח שברצונך לאתחל אזעקה חדשה ולמחוק את כל נתוני הצ'אט והסטטוס?')) {
+      resetAllData(); // קרא לפונקציית האיפוס מהקונטקסט
+      // אופציונלי: להציג הודעת אישור למשתמש
+    }
   };
 
   if (!userName) {
@@ -23,8 +30,20 @@ const EmergencyDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-8 flex justify-between items-center"> {/* הוסף flex ו-justify-between */}
-          <div className="text-right flex-grow"> {/* עוטף את הטקסט ומיישר אותו לימין */}
+        <header className="text-center mb-8 flex justify-between items-center">
+          {/* כפתור "אזעקה חדשה" בצד ימין (בהתחלה ב-RTL) */}
+          <Button
+            variant="destructive" // צבע אדום
+            size="sm"
+            onClick={handleNewAlarm}
+            className="ml-4 flex items-center" // מרווח שמאלי, יישור פנימי
+          >
+            <Siren className="w-4 h-4 ml-2" /> {/* אייקון סירנה מימין לטקסט */}
+            אזעקה חדשה!
+          </Button>
+
+          {/* טקסט הכותרת במרכז */}
+          <div className="text-right flex-grow">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">
               🏠 הממ"ד המשותף של משפחת שטוקהמר
             </h1>
@@ -33,14 +52,14 @@ const EmergencyDashboard: React.FC = () => {
             </p>
           </div>
           
-          {/* כפתור ההתנתקות / עריכת שם משתמש */}
+          {/* כפתור ההתנתקות / עריכת שם משתמש בצד שמאל */}
           <Button
             variant="outline"
-            size="sm" // גודל קטן יותר
+            size="sm"
             onClick={handleLogout}
-            className="ml-4 flex items-center" // מרווח שמאלי, יישור פנימי
+            className="ml-4 flex items-center"
           >
-            <UserPen className="w-4 h-4 mr-2" /> {/* אייקון עריכה */}
+            <UserPen className="w-4 h-4 ml-2" />
             עריכת שם / התנתקות
           </Button>
         </header>

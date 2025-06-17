@@ -4,19 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmergency } from '@/contexts/EmergencyContext';
-import { MessageCircle, Send, Trash2 } from 'lucide-react'; // Import Trash2 icon
+import { MessageCircle, Send } from 'lucide-react'; // Remove Trash2 import here
 
 const FamilyChat: React.FC = () => {
-  const { chatMessages, userName, sendMessage, resetAllData } = useEmergency(); // Destructure resetAllData
+  const { chatMessages, userName, sendMessage } = useEmergency(); // Remove resetAllData from here
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatScrollContainerRef = useRef<HTMLDivElement>(null); // Ref עבור ה-div הניתן לגלילה
+  const chatScrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // פונקציה לגלילה לתחתית, עם תנאי
   const scrollToBottom = () => {
     if (chatScrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = chatScrollContainerRef.current;
-      const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50; // באפר של 50 פיקסלים מהתחתית
+      const isScrolledToBottom = scrollTop + clientHeight >= scrollHeight - 50;
 
       if (isScrolledToBottom || chatMessages.length === 0) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,26 +43,15 @@ const FamilyChat: React.FC = () => {
   };
 
   return (
-    // Card Container: הגבלת רוחב מקסימלי, התמרכזות, וגובה קבוע (h-96 הוחזר)
     <Card className="flex flex-col h-96 shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
       <CardHeader className="flex-shrink-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
           <MessageCircle className="h-5 w-5 text-purple-600" />
           צ'אט משפחתי 💬
-          {/* כפתור איפוס: ממוקם ליד הכותרת */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={resetAllData}
-            className="mr-auto text-red-500 hover:text-red-700" // mr-auto דוחף אותו לקצה השני
-            title="איפוס נתוני צ'אט וסטטוס"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {/* REMOVED: Reset Button from here */}
         </CardTitle>
       </CardHeader>
 
-      {/* אזור תוכן הצ'אט: Flex item שיתפוס את השטח הזמין ויגלול */}
       <CardContent className="flex-1 flex flex-col p-4 pt-0 overflow-hidden">
         <div ref={chatScrollContainerRef} className="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thumb-rounded scrollbar-track-rounded scrollbar-thumb-gray-400 scrollbar-track-gray-100">
           {chatMessages.length === 0 ? (
@@ -75,7 +63,6 @@ const FamilyChat: React.FC = () => {
             chatMessages.map((msg) => (
               <div
                 key={msg.id}
-                // בועת ההודעה: מקטין padding, הגבלת רוחב מקסימלי, וודא שבירת מילים
                 className={`p-2 rounded-lg max-w-[85%] overflow-hidden ${
                   msg.sender === userName
                     ? 'bg-blue-100 text-blue-900 ml-auto'
