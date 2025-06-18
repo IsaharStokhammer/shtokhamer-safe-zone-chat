@@ -15,11 +15,9 @@ const EmergencyDashboard: React.FC = () => {
     setUserName('');
   };
 
-  // פונקציה לטיפול בלחיצה על כפתור "אזעקה חדשה"
   const handleNewAlarm = () => {
-    // שינוי הודעת האישור
     if (window.confirm("האם אתה בטוח שברצונך לאתחל אזעקה חדשה? פעולה זו תאפס את סטטוסי הבטיחות של כל בני המשפחה.")) {
-      resetAllData(); // קרא לפונקציית האיפוס מהקונטקסט
+      resetAllData();
     }
   };
 
@@ -31,7 +29,6 @@ const EmergencyDashboard: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-purple-50 p-4">
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-8 flex justify-between items-center">
-          {/* כפתור "אזעקה חדשה" בצד ימין (בהתחלה ב-RTL) */}
           <Button
             variant="destructive"
             size="sm"
@@ -42,17 +39,15 @@ const EmergencyDashboard: React.FC = () => {
             אזעקה חדשה!
           </Button>
 
-          {/* טקסט הכותרת במרכז */}
           <div className="text-right flex-grow">
             <h1 className="text-3xl font-bold text-slate-800 mb-2">
-              🏠 הממ"ד המשותף של משפחת שטוקהמר
+              🏠 משפחת שטוקהמר
             </h1>
             <p className="text-slate-600 text-lg">
               ברוכים הבאים, {userName} 💙
             </p>
           </div>
           
-          {/* כפתור ההתנתקות / עריכת שם משתמש בצד שמאל */}
           <Button
             variant="outline"
             size="sm"
@@ -64,14 +59,15 @@ const EmergencyDashboard: React.FC = () => {
           </Button>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
+        {/* שינוי המיכל העוטף: הגדרת גובה כללי ושימוש ב-flex-1 על הילדים */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[700px] lg:h-[calc(100vh-180px)]"> {/* גובה קבוע גדול או גובה רספונסיבי */}
+          <div className="space-y-6 flex flex-col"> {/* הפוך את העמודה ל-flex-col */}
             <SafetyButton />
-            <FamilyStatus />
+            <FamilyStatus className="flex-1" /> {/* FamilyStatus יתפוס את הגובה הנותר */}
           </div>
           
-          <div>
-            <FamilyChat />
+          <div> {/* מיכל הצ'אט, יתפוס את הרוחב השני */}
+            <FamilyChat className="h-full" /> {/* FamilyChat יתפוס 100% מהגובה של ההורה שלו */}
           </div>
         </div>
 

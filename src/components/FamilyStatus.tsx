@@ -4,7 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmergency } from '@/contexts/EmergencyContext';
 import { Users, Clock } from 'lucide-react';
 
-const FamilyStatus: React.FC = () => {
+interface FamilyStatusProps {
+  className?: string; // הוסף את className ל-props
+}
+
+const FamilyStatus: React.FC<FamilyStatusProps> = ({ className }) => { // קבל את className
   const { familyMembers } = useEmergency();
 
   const formatTime = (timestamp: Date) => {
@@ -16,15 +20,15 @@ const FamilyStatus: React.FC = () => {
   };
 
   return (
-    // הוסף h-[700px] כדי להתאים לגובה הצ'אט
-    <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm h-[700px] flex flex-col">
+    // הסר h-[700px], והוסף flex flex-col
+    <Card className={`shadow-lg border-0 bg-white/90 backdrop-blur-sm flex flex-col ${className}`}>
       <CardHeader className="pb-4 flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
           <Users className="h-5 w-5 text-blue-600" />
           מצב בני המשפחה ({familyMembers.length})
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto"> {/* הוסף flex-1 ו-overflow-y-auto כדי שהתוכן יוכל לגלול אם רב */}
+      <CardContent className="flex-1 overflow-y-auto">
         {familyMembers.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <div className="text-2xl mb-2">⏳</div>

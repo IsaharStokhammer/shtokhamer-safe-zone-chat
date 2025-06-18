@@ -4,17 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmergency } from '@/contexts/EmergencyContext';
-import { MessageCircle, Send, Trash2, Smile } from 'lucide-react'; // Import Smile for reaction button
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Import Popover components
+import { MessageCircle, Send, Trash2, Smile } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-const FamilyChat: React.FC = () => {
+interface FamilyChatProps {
+  className?: string; // הוסף את className ל-props
+}
+
+const FamilyChat: React.FC<FamilyChatProps> = ({ className }) => { // קבל את className
   const { chatMessages, userName, sendMessage, resetAllData, typingUsers, startTyping, stopTyping, addReaction } = useEmergency();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatScrollContainerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Common emojis for quick reaction
   const commonEmojis = ['👍', '❤️', '😂', '🙏', '😢', '🔥'];
 
   const scrollToBottom = () => {
@@ -82,7 +85,8 @@ const FamilyChat: React.FC = () => {
   const otherTypingUsers = typingUsers.filter(user => user !== userName);
 
   return (
-    <Card className="flex flex-col h-[700px] shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md">
+    // הסר h-[700px], והוסף className מה-props
+    <Card className={`flex flex-col shadow-lg border-0 bg-white/90 backdrop-blur-sm mx-auto w-full md:max-w-md ${className}`}>
       <CardHeader className="flex-shrink-0 pb-4">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
           <MessageCircle className="h-5 w-5 text-purple-600" />
@@ -110,7 +114,7 @@ const FamilyChat: React.FC = () => {
             chatMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`p-2 rounded-lg max-w-[85%] overflow-hidden relative group ${ // Added relative and group for popover positioning
+                className={`p-2 rounded-lg max-w-[85%] overflow-hidden relative group ${
                   msg.sender === userName
                     ? 'bg-blue-100 text-blue-900 ml-auto'
                     : 'bg-gray-100 text-gray-900 mr-auto'
@@ -129,15 +133,14 @@ const FamilyChat: React.FC = () => {
                   {formatTime(msg.timestamp)}
                 </div>
 
-                {/* NEW: Reactions display */}
                 {msg.reactions && msg.reactions.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2 text-xs">
                     {msg.reactions.map((reaction) => (
                       <span
                         key={reaction.emoji}
                         className="bg-white/70 px-2 py-0.5 rounded-full border border-gray-200 flex items-center cursor-pointer hover:bg-gray-200 transition-colors"
-                        title={reaction.users.join(', ')} // Show who reacted on hover
-                        onClick={() => handleAddReaction(msg.id, reaction.emoji)} // Allow toggling reaction
+                        title={reaction.users.join(', ')}
+                        onClick={() => handleAddReaction(msg.id, reaction.emoji)}
                       >
                         {reaction.emoji} {reaction.users.length}
                       </span>
@@ -145,13 +148,12 @@ const FamilyChat: React.FC = () => {
                   </div>
                 )}
 
-                {/* NEW: Reaction button (Popover) - positioned absolutely for better placement */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className={`absolute top-0.5 ${msg.sender === userName ? 'left-0.5' : 'right-0.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto w-auto`} // Hide by default, show on hover
+                      className={`absolute top-0.5 ${msg.sender === userName ? 'left-0.5' : 'right-0.5'} opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto w-auto`}
                       title="הגב באימוג'י"
                     >
                       <Smile className="h-3 w-3" />
@@ -177,7 +179,6 @@ const FamilyChat: React.FC = () => {
           <div ref={messagesEndRef} />
         </div>
         
-        {/* Typing indicator */}
         {otherTypingUsers.length > 0 && (
           <div className="text-right text-sm text-slate-500 mt-2 mb-2 pr-2">
             {otherTypingUsers.join(', ')} מקליד/ה...
