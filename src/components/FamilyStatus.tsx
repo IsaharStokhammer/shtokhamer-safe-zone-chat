@@ -1,4 +1,4 @@
-
+// src/components/FamilyStatus.tsx
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useEmergency } from '@/contexts/EmergencyContext';
@@ -16,14 +16,15 @@ const FamilyStatus: React.FC = () => {
   };
 
   return (
-    <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+    // הוסף h-[700px] כדי להתאים לגובה הצ'אט
+    <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm h-[700px] flex flex-col">
+      <CardHeader className="pb-4 flex-shrink-0">
         <CardTitle className="flex items-center gap-2 text-slate-800 text-right">
           <Users className="h-5 w-5 text-blue-600" />
           מצב בני המשפחה ({familyMembers.length})
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 overflow-y-auto"> {/* הוסף flex-1 ו-overflow-y-auto כדי שהתוכן יוכל לגלול אם רב */}
         {familyMembers.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
             <div className="text-2xl mb-2">⏳</div>
